@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { MetadataKeys } from "./enums/metadataKeys";
 
-function validateBody(...keys: string[]) {
+function validateBody(...keys: validatorRules[]) {
   return function (
     target: any,
     key: string,

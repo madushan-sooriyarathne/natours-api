@@ -1,4 +1,11 @@
+# node modules folder
 /node_modules
+
+# build output folder
 /dist
 
+# visual stuido code configs
+.vscode
+
+# environmental variables
 config.env

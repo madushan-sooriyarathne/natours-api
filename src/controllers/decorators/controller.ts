@@ -4,7 +4,7 @@ import { AppRouter } from "../../Router";
 import { MetadataKeys } from "./enums/metadataKeys";
 import { Methods } from "./enums/routeNames";
 
-function validateRequestBody(keys: string[]): RequestHandler {
+function validateRequestBody(keys: validatorRules[]): RequestHandler {
   return function (req: Request, res: Response, next: NextFunction): void {
     if (!req.body) {
       res.status(400).json({ status: "failed", message: "Invalid request" });
@@ -12,10 +12,18 @@ function validateRequestBody(keys: string[]): RequestHandler {
     }
 
     for (let key of keys) {
-      if (!req.body[key]) {
+      if (!req.body[key.name]) {
         res.status(400).json({
           status: "failed",
-          message: `${key} is missing in the request body`,
+          message: `${key.name} is missing in the request body`,
+        });
+        return;
+      }
+
+      if (typeof req.body[key.name] !== key.type) {
+        res.status(400).json({
+          status: "failed",
+          message: `type of ${key.name} does not match to ${key.type}`,
         });
         return;
       }
@@ -51,7 +59,7 @@ export function controller(routerPrefix: string) {
         Reflect.getMetadata(MetadataKeys.middleware, target.prototype, key) ||
         [];
 
-      const bodyValidatorRules: string[] =
+      const bodyValidatorRules: validatorRules[] =
         Reflect.getMetadata(
           MetadataKeys.bodyValidator,
           target.prototype,

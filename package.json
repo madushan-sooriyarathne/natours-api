@@ -5,8 +5,12 @@
   "main": "dist/app.js",
   "scripts": {
     "start:build": "tsc -w",
-    "start:serve": "nodemon NODE_ENV=development /dist/app.js",
-    "start": "concurrently npm:start:*"
+    "start:serve": "NODE_ENV=development nodemon /dist/app.js",
+    "prod:build": "tsc -w",
+    "prod:serve": "NODE_ENV=production nodemon /dist/app.js",
+    "prod": "concurrently npm:prod:*",
+    "start": "concurrently npm:start:*",
+    "debug": "ndb /src/app.ts"
   },
   "repository": {
     "type": "git",

@@ -1,12 +1,13 @@
-import express, { Express } from "express";
-import bodyParser from "body-parser";
+import express, { Express, Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 
 import { AppRouter } from "./Router";
+import globalErrorHandler from "./utils/ErrorHandlers";
 
 import "./controllers/userController";
 import "./controllers/tourController";
+import "./controllers/errorController";
 
 // config dotenv
 dotenv.config({ path: `${__dirname}/../config.env` });
@@ -39,5 +40,13 @@ mongoose
 
 app.use(express.json());
 app.use(AppRouter.getRouter());
+
+/**
+ * Error catching middleware
+ * this globalErrorHandler function catch any errors that arise
+ * in routeHandlers and send the failed/error response to
+ * the client with given message & statusCode
+ */
+app.use(globalErrorHandler);
 
 app.listen(3000, (): void => console.log("Listing on port 3000"));

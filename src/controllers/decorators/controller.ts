@@ -4,6 +4,11 @@ import { AppRouter } from "../../Router";
 import { MetadataKeys } from "./enums/metadataKeys";
 import { Methods } from "./enums/routeNames";
 
+/**
+ * Function that takes an array of validatorRules objects and
+ * checks if request body has all necessary fields
+ * @param {validatorRules[]} keys - An array of validatorRules that request body must match to
+ */
 function validateRequestBody(keys: validatorRules[]): RequestHandler {
   return function (req: Request, res: Response, next: NextFunction): void {
     if (!req.body) {
@@ -32,13 +37,43 @@ function validateRequestBody(keys: validatorRules[]): RequestHandler {
   };
 }
 
+/**
+ * This function take a route handling function as a argument and
+ * attach a catch statement. Then return it after wrapping it in a another RequestHandler
+ * @param {(req: Request, res: Response, next?:NextFunction) => Promise<void>} fn - a route handling function which needed to be error handled
+ * @returns {RequestHandler} - New RequestHandler function that wraps original request handler
+ */
+function handleErrors(
+  fn: (req: Request, res: Response, next?: NextFunction) => Promise<void>
+): RequestHandler {
+  return async function (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    fn(req, res, next).catch((error) => next(error));
+  };
+}
+
+/**
+ * A class decorator function that used to for Route Controller classes
+ * This decorator maps all the route handling functions and necessary middlewares
+ * along with error handling phase of route handling functions
+ * @function controller
+ * @decorator
+ * @param {string} routerPrefix - base route prefix for all route handlers
+ */
 export function controller(routerPrefix: string) {
   return function (target: Function) {
     const router = AppRouter.getRouter();
 
     for (const key in target.prototype) {
       // get the route handling method
-      const routeHandler: RequestHandler = target.prototype[key];
+      let routeHandler: (
+        req: Request,
+        res: Response,
+        next?: NextFunction
+      ) => Promise<void> = target.prototype[key];
 
       // get the routes (if any specified)
       const route: string = Reflect.getMetadata(
@@ -73,7 +108,7 @@ export function controller(routerPrefix: string) {
         `${routerPrefix}${route}`,
         ...middlewareList,
         bodyValidator,
-        routeHandler
+        handleErrors(routeHandler)
       );
     }
   };

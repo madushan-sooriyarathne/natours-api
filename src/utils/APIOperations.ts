@@ -3,11 +3,11 @@ import { ParsedQs } from "qs";
 
 type RequestQuery = { [key: string]: string };
 
-class APIOperations<T extends Document<K>, K> {
-  query: Query<T[], T>;
+class APIOperations<T, K extends Document<any>> {
+  query: Query<T[], K>;
   requestQueryObject: ParsedQs;
 
-  constructor(query: Query<T[], T>, requestQueryObject: ParsedQs) {
+  constructor(query: Query<T[], K>, requestQueryObject: ParsedQs) {
     this.query = query;
     this.requestQueryObject = requestQueryObject;
   }
@@ -25,7 +25,7 @@ class APIOperations<T extends Document<K>, K> {
     const filteredQueryStrings: string = JSON.stringify(
       filteredQueryObject
     ).replace(/\b(gt|gte|lt|lte)\b/g, (match: string) => `$${match}`);
-    this.query = this.query.find(JSON.parse(filteredQueryStrings));
+    this.query = this.query.find(JSON.parse(filteredQueryStrings)) as any;
 
     return this;
   }

@@ -1,7 +1,13 @@
 import { Request, Response, NextFunction } from "express";
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 import { NoSubstitutionTemplateLiteral } from "typescript";
 import { TypeStrings } from "./src/controllers/decorators/enums/typeStrings";
+
+enum DifficultyLevels {
+  easy = "easy",
+  medium = "medium",
+  hard = "hard",
+}
 
 declare global {
   interface MiddlewareHandler {
@@ -28,13 +34,32 @@ declare global {
     upcomingTours: number;
   }
 
-  interface TourDocument extends Document {
+  interface Tour {
     name: string;
-    price: number;
-    rating: number;
-    difficulty: string;
+    slug: string;
     duration: number;
-    maxGroupSize?: number;
+    maxGroupSize: number;
+    difficulty: DifficultyLevels;
+    price: number;
+    summery: string;
+    imageCover: string;
+    images?: string[];
+    createdAt?: Date;
+    startDates?: Date[];
+    description?: number;
+    priceDiscount?: number;
+    ratingsAverage?: number;
+    ratingsQuantity?: number;
+    secretTour?: boolean;
+  }
+
+  interface TourDocument extends Tour, Document {
+    images?: Types.Array<string>;
+    startDate?: Types.Array<Date>;
+  }
+
+  interface TourResult extends Tour {
+    durationWeeks?: number;
   }
 
   interface AliasRouteOptions {

@@ -26,12 +26,21 @@ declare global {
     type: TypeStrings;
   }
 
-  interface UserDocument extends Document {
+  interface User {
+    username: string;
     name: string;
-    age: number;
-    finishedTours: [];
-    ongoingTours: [];
-    upcomingTours: number;
+    email: string;
+    password: string;
+    confirmPassword?: string;
+    photo?: string;
+  }
+
+  interface UserDocument extends User, Document {
+    verifyPassword: (candidatePassword: string) => Promise<boolean>;
+  }
+
+  interface UserResult extends User {
+    // if there's any virtuals, add here
   }
 
   interface Tour {

@@ -46,7 +46,13 @@ mongoose
     useCreateIndex: true,
     useFindAndModify: false,
   })
-  .then((): void => console.log("Successfully connected to the database"));
+  .then((): void => console.log("Successfully connected to the database"))
+  .catch((err: Error) => {
+    console.log(
+      `Cannot establish the Database connection 🤯 \Error => ${err.message}`
+    );
+    process.exit(1);
+  });
 
 app.use(express.json());
 app.use(AppRouter.getRouter());
@@ -65,6 +71,7 @@ const server: Server = app.listen(3000, (): void =>
 
 // Unhandled promise rejection event subscriber
 process.on("unhandledRejection", function (err: Error): void {
+  console.log(`Unhandled Promise Rejection => ${err.message}`);
   server.close(function (): void {
     process.exit(1);
   });

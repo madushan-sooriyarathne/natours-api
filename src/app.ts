@@ -1,4 +1,4 @@
-import express, { Express, Request, Response, NextFunction } from "express";
+import express, { Express } from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
@@ -7,7 +7,17 @@ import globalErrorHandler from "./utils/ErrorHandlers";
 
 import "./controllers/userController";
 import "./controllers/tourController";
+import "./controllers/authController";
+
+// Always import the errorController after all other controllers
 import "./controllers/errorController";
+import { Server } from "http";
+
+// uncaught Exception event subscriber
+process.on("uncaughtException", function (err: Error): void {
+  console.log(`${err.name} - ${err.message}`);
+  process.exit(1);
+});
 
 // config dotenv
 dotenv.config({ path: `${__dirname}/../config.env` });
@@ -49,4 +59,13 @@ app.use(AppRouter.getRouter());
  */
 app.use(globalErrorHandler);
 
-app.listen(3000, (): void => console.log("Listing on port 3000"));
+const server: Server = app.listen(3000, (): void =>
+  console.log("Listing on port 3000")
+);
+
+// Unhandled promise rejection event subscriber
+process.on("unhandledRejection", function (err: Error): void {
+  server.close(function (): void {
+    process.exit(1);
+  });
+});

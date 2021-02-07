@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response, RequestHandler } from "express";
-
 import {
+  asyncHandler,
   controller,
   del,
   get,
@@ -8,12 +8,14 @@ import {
   post,
   put,
   use,
+  useAsync,
   validateBody,
 } from "./decorators";
 import Tour from "../models/Tour";
 import { TypeStrings } from "./decorators/enums/typeStrings";
 import APIOperations from "../utils/APIOperations";
 import AppError from "../utils/AppError";
+import { loginRequired } from "./middlewares/loginRequired";
 
 /**
  * A middleware function to validate tour id
@@ -30,20 +32,17 @@ async function validateId(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  if (!req.params.id) {
-    next(new AppError("Invalid request. you must have a id parameter", 404));
-  }
+  if (!req.params.id)
+    throw new AppError("Invalid request. you must have a id parameter", 404);
 
   const fetchedTour = await Tour.findById(req.params.id);
 
-  if (!fetchedTour) {
-    next(
-      new AppError(
-        `Invalid tour id. ${req.params.id} does not associate with any existing tours`,
-        404
-      )
+  if (!fetchedTour)
+    throw new AppError(
+      `Invalid tour id. ${req.params.id} does not associate with any existing tours`,
+      404
     );
-  }
+
   next();
 }
 
@@ -87,7 +86,9 @@ class TourController {
    * @param {Express.Response} res - Express Response object
    * @returns {Promise<void>} - A promise that resolves to void
    */
+  @asyncHandler
   @get("/")
+  @useAsync(loginRequired)
   async getTours(req: Request, res: Response): Promise<void> {
     const apiOperationQuery = new APIOperations<TourResult, TourDocument>(
       Tour.find(),
@@ -114,6 +115,7 @@ class TourController {
    * @param {Express.Response} res - Express Response object
    * @returns {Promise<void>} - A promise that resolves to void
    */
+  @asyncHandler
   @get("/best-5-budget-tours")
   @use(getAliasMiddleware(2))
   async getBestBudgetTours(req: Request, res: Response): Promise<void> {
@@ -143,6 +145,7 @@ class TourController {
    * @param {Express.Response} res - Express Response object
    * @returns {Promise<void>} - A promise that resolves to void
    */
+  @asyncHandler
   @get("/tour-stats")
   async getTourStats(req: Request, res: Response): Promise<void> {
     const stats = await Tour.aggregate([
@@ -175,6 +178,7 @@ class TourController {
    * @param {Express.Response} res - Express Response object
    * @returns {Promise<void>} - A promise that resolves to void
    */
+  @asyncHandler
   @get("/monthly-report")
   async getMonthlyReport(req: Request, res: Response): Promise<void> {}
 
@@ -187,6 +191,7 @@ class TourController {
    * @param {Express.Response} res - Express Response object
    * @returns {Promise<void>} - A promise that resolves to void
    */
+  @asyncHandler
   @post("/")
   @validateBody(
     { name: "name", type: TypeStrings.String },
@@ -214,8 +219,9 @@ class TourController {
    * @param {Express.Response} res - Express Response object
    * @returns {Promise<void>} - A promise that resolves to void
    */
+  @asyncHandler
   @patch("/:id")
-  @use(validateId)
+  @useAsync(validateId)
   async updateTour(req: Request, res: Response): Promise<void> {
     const updatedTour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -234,8 +240,9 @@ class TourController {
    * @param {Express.Response} res - Express Response object
    * @returns {Promise<void>} - A promise that resolves to void
    */
+  @asyncHandler
   @put("/:id")
-  @use(validateId)
+  @useAsync(validateId)
   @validateBody(
     { name: "name", type: TypeStrings.String },
     { name: "difficulty", type: TypeStrings.String },
@@ -264,8 +271,9 @@ class TourController {
    * @param {Express.Response} res - Express Response object
    * @returns {Promise<void>} - A promise that resolves to void
    */
+  @asyncHandler
   @del("/:id")
-  @use(validateId)
+  @useAsync(validateId)
   async deleteTour(
     req: Request,
     res: Response,

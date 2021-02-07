@@ -1,7 +1,9 @@
 export enum MetadataKeys {
   route = "route",
   method = "method",
-  middleware = "middleware",
+  syncMiddleware = "syncMiddleware",
+  asyncMiddleware = "asyncMiddleware",
   params = "params",
   bodyValidator = "bodyValidator",
+  async = "async",
 }

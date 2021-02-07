@@ -29,6 +29,15 @@ const userSchema: Schema<UserDocument> = new Schema({
     select: false,
   },
 
+  userType: {
+    type: String,
+    enum: {
+      values: ["user", "moderator", "admin"],
+      message: "user type must be either 'user', 'moderator' or 'admin'",
+    },
+    default: "user",
+  },
+
   confirmPassword: {
     type: String,
     required: [true, "password confirmation is required"],
@@ -45,6 +54,10 @@ const userSchema: Schema<UserDocument> = new Schema({
     type: String,
     default: "profile-dp.webp",
   },
+
+  changedPasswordAt: {
+    type: Date,
+  },
 });
 
 // Methods
@@ -52,6 +65,16 @@ userSchema.methods.verifyPassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   return await bcyrpt.compare(candidatePassword, this.password);
+};
+
+userSchema.methods.hasChangedPassword = function (expAt: number): boolean {
+  if (this.changedPasswordAt) {
+    console.log(this.changedPasswordAt.getTime() / 1000);
+    return this.changedPasswordAt.getTime() / 1000 > expAt;
+  }
+
+  console.log(` ${expAt}`);
+  return false;
 };
 
 // Pre save hooks
@@ -64,6 +87,9 @@ userSchema.pre("save", async function (next: () => void): Promise<void> {
 
   // hash the password and store in the processing document
   this.password = await bcyrpt.hash(this.password, 12);
+
+  // set the password update date
+  this.changedPasswordAt = new Date();
 
   // delete confirmPassword field
   this.confirmPassword = undefined;

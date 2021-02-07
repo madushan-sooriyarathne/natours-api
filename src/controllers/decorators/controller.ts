@@ -1,8 +1,15 @@
 import "reflect-metadata";
-import { NextFunction, RequestHandler, Request, Response } from "express";
+import {
+  NextFunction,
+  RequestHandler,
+  Request,
+  Response,
+  response,
+} from "express";
 import { AppRouter } from "../../Router";
 import { MetadataKeys } from "./enums/metadataKeys";
 import { Methods } from "./enums/routeNames";
+import isAsyncFunction from "../../utils/isAsyncFunction";
 
 /**
  * Function that takes an array of validatorRules objects and
@@ -38,20 +45,18 @@ function validateRequestBody(keys: validatorRules[]): RequestHandler {
 }
 
 /**
- * This function take a route handling function as a argument and
- * attach a catch statement. Then return it after wrapping it in a another RequestHandler
- * @param {(req: Request, res: Response, next?:NextFunction) => Promise<void>} fn - a route handling function which needed to be error handled
+ * This function take a request handling handling function (async or non-async) as a argument and
+ * handles any unhandled promise rejection errors
+ * @param {AsyncRequestHandler | SyncRequestHandler | RequestHandler} fn - a route handling function which needed to be error handled
  * @returns {RequestHandler} - New RequestHandler function that wraps original request handler
  */
-function handleErrors(
-  fn: (req: Request, res: Response, next?: NextFunction) => Promise<void>
-): RequestHandler {
+function handleAsyncErrors(fn: AsyncRequestHandler): RequestHandler {
   return async function (
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    fn(req, res, next).catch((error) => next(error));
+    fn(req, res, next).catch((err) => next(err));
   };
 }
 
@@ -69,11 +74,22 @@ export function controller(routerPrefix: string) {
 
     for (const key in target.prototype) {
       // get the route handling method
-      let routeHandler: (
-        req: Request,
-        res: Response,
-        next?: NextFunction
-      ) => Promise<void> = target.prototype[key];
+      let routeHandler:
+        | AsyncRequestHandler
+        | SyncRequestHandler
+        | RequestHandler = target.prototype[key];
+
+      // Check if the method has async metadata
+      const isAsync: boolean = Reflect.getMetadata(
+        MetadataKeys.async,
+        target.prototype,
+        key
+      );
+
+      // Handle unhandled Rejection Errors if method is a async method
+      if (isAsync) {
+        routeHandler = handleAsyncErrors(routeHandler as AsyncRequestHandler);
+      }
 
       // get the routes (if any specified)
       const route: string = Reflect.getMetadata(
@@ -89,10 +105,24 @@ export function controller(routerPrefix: string) {
         key
       );
 
-      // get middleware list
-      const middlewareList: RequestHandler[] =
-        Reflect.getMetadata(MetadataKeys.middleware, target.prototype, key) ||
-        [];
+      // get sync middleware list
+      const syncMiddlewareList: SyncRequestHandler[] =
+        Reflect.getMetadata(
+          MetadataKeys.syncMiddleware,
+          target.prototype,
+          key
+        ) || [];
+
+      // get async middleware list
+      const asyncMiddlewareList: AsyncRequestHandler[] | RequestHandler[] = (
+        Reflect.getMetadata(
+          MetadataKeys.asyncMiddleware,
+          target.prototype,
+          key
+        ) || []
+      ).map((middleware: AsyncRequestHandler | RequestHandler) =>
+        handleAsyncErrors(middleware as AsyncRequestHandler)
+      );
 
       const bodyValidatorRules: validatorRules[] =
         Reflect.getMetadata(
@@ -104,12 +134,14 @@ export function controller(routerPrefix: string) {
         bodyValidatorRules
       );
 
-      router[method](
-        `${routerPrefix}${route}`,
-        ...middlewareList,
-        bodyValidator,
-        handleErrors(routeHandler)
-      );
+      router
+        .route(`${routerPrefix}${route}`)
+        [method](
+          ...syncMiddlewareList,
+          ...asyncMiddlewareList,
+          bodyValidator,
+          routeHandler
+        );
     }
   };
 }

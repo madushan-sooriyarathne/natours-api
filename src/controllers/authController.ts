@@ -4,15 +4,18 @@ import jwt from "jsonwebtoken";
 import User from "../models/User";
 import AppError from "../utils/AppError";
 
-import { controller, post, validateBody } from "./decorators";
+import { controller, post, validateBody, asyncHandler } from "./decorators";
 import { TypeStrings } from "./decorators/enums/typeStrings";
 
 function getSignedAccessToken(userId: string): string {
-  return jwt.sign({ userId }, process.env.AUTH_SALT as string);
+  return jwt.sign({ userId }, process.env.AUTH_SALT as string, {
+    expiresIn: "15m",
+  });
 }
 
 @controller("/api/v1/auth")
 class AuthController {
+  @asyncHandler
   @post("/register")
   @validateBody(
     { name: "username", type: TypeStrings.String },
@@ -31,6 +34,7 @@ class AuthController {
     res.status(201).json({ status: "success", data: user, token: accessToken });
   }
 
+  @asyncHandler
   @post("/login")
   @validateBody(
     { name: "email", type: TypeStrings.String },

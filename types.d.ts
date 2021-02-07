@@ -9,6 +9,12 @@ enum DifficultyLevels {
   hard = "hard",
 }
 
+enum UserTypes {
+  user = "user",
+  moderator = "moderator",
+  admin = "admin",
+}
+
 declare global {
   interface MiddlewareHandler {
     req: Request;
@@ -33,10 +39,13 @@ declare global {
     password: string;
     confirmPassword?: string;
     photo?: string;
+    userType: UserTypes;
   }
 
   interface UserDocument extends User, Document {
     verifyPassword: (candidatePassword: string) => Promise<boolean>;
+    hasChangedPassword: (expAt: number) => boolean;
+    changedPasswordAt?: Date;
   }
 
   interface UserResult extends User {
@@ -75,4 +84,21 @@ declare global {
     limit: number;
     sort: string;
   }
+
+  interface VerifiedJWTResult {
+    userId: string;
+    iat: number;
+    exp: number;
+  }
+
+  type AsyncRequestHandler = (
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ) => Promise<void>;
+  type SyncRequestHandler = (
+    req: Request,
+    res: Response,
+    next?: NextFunction
+  ) => void;
 }

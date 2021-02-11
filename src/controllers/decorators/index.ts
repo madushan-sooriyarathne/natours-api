@@ -3,3 +3,4 @@ export * from "./routes";
 export * from "./validateBody";
 export * from "./use";
 export * from "./asyncHandler";
+export * from "./authorizeUser";

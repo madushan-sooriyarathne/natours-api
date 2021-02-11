@@ -1,4 +1,5 @@
-import bcyrpt from "bcrypt";
+import crypto from "crypto";
+import bcyrpt, { hash } from "bcrypt";
 import { Model, Schema, model } from "mongoose";
 
 const userSchema: Schema<UserDocument> = new Schema({
@@ -57,6 +58,16 @@ const userSchema: Schema<UserDocument> = new Schema({
 
   changedPasswordAt: {
     type: Date,
+    select: false,
+  },
+
+  passwordResetToken: {
+    type: String,
+    select: false,
+  },
+  resetTokenExpiresAt: {
+    type: Number,
+    select: false,
   },
 });
 
@@ -64,6 +75,9 @@ const userSchema: Schema<UserDocument> = new Schema({
 userSchema.methods.verifyPassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
+  console.log(`Given password: ${candidatePassword}`);
+  console.log(`Old password: ${this.password}`);
+
   return await bcyrpt.compare(candidatePassword, this.password);
 };
 
@@ -75,6 +89,30 @@ userSchema.methods.hasChangedPassword = function (expAt: number): boolean {
 
   console.log(` ${expAt}`);
   return false;
+};
+
+userSchema.methods.getPasswordResetToken = function (): string {
+  // Generate a plain string token
+  const token: string = crypto.randomBytes(32).toString("hex");
+
+  // Hash the token
+  const hashedToken: string = crypto
+    .createHash("SHA256")
+    .update(token)
+    .digest("hex");
+
+  // Store the token in database
+  this.passwordResetToken = hashedToken;
+
+  // set the password reset token expire data
+  this.resetTokenExpiresAt = Date.now() + 10 * 60 * 1000;
+
+  return token;
+};
+
+// Static Methods
+userSchema.statics.generateHashedToken = function (token: string): string {
+  return crypto.createHash("SHA256").update(token).digest("hex");
 };
 
 // Pre save hooks
@@ -97,6 +135,6 @@ userSchema.pre("save", async function (next: () => void): Promise<void> {
   next();
 });
 
-const User: Model<UserDocument> = model("User", userSchema);
+const User: UserModel = model<UserDocument, UserModel>("User", userSchema);
 
 export default User;

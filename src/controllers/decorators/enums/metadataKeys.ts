@@ -6,4 +6,5 @@ export enum MetadataKeys {
   params = "params",
   bodyValidator = "bodyValidator",
   async = "async",
+  authorize = "authorize",
 }

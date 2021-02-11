@@ -1,15 +1,14 @@
 import "reflect-metadata";
-import {
-  NextFunction,
-  RequestHandler,
-  Request,
-  Response,
-  response,
-} from "express";
+import { NextFunction, RequestHandler, Request, Response } from "express";
+import jwt from "jsonwebtoken";
+import { promisify } from "util";
+
 import { AppRouter } from "../../Router";
 import { MetadataKeys } from "./enums/metadataKeys";
 import { Methods } from "./enums/routeNames";
-import isAsyncFunction from "../../utils/isAsyncFunction";
+import { UserTypes } from "./enums/userTypes";
+import AppError from "../../utils/AppError";
+import User from "../../models/User";
 
 /**
  * Function that takes an array of validatorRules objects and
@@ -40,6 +39,41 @@ function validateRequestBody(keys: validatorRules[]): RequestHandler {
         return;
       }
     }
+    next();
+  };
+}
+
+/**
+ * Function that takes list of allowed user types and
+ * check if current user is authorized before reaching the specified route
+ * @param userTypes - List of allowed user types
+ * @returns {RequestHandler} - Middleware function that checks and authorize user types
+ */
+function authorizeUser(userTypes: UserTypes[]): RequestHandler {
+  return function (req: Request, res: Response, next: NextFunction): void {
+    if (userTypes.length < 1) {
+      // No user types are mentioned
+      // skip user authorization
+      next();
+      return;
+    }
+
+    const currentUser: UserDocument = (req as { [key: string]: any }).user;
+
+    if (!currentUser)
+      throw new AppError(
+        "You must be authenticated first to use this route",
+        403,
+        "failed"
+      );
+
+    if (!userTypes.includes(currentUser.userType as UserTypes))
+      throw new AppError(
+        "You are not authorized to use this route",
+        403,
+        "failed"
+      );
+
     next();
   };
 }
@@ -80,7 +114,7 @@ export function controller(routerPrefix: string) {
         | RequestHandler = target.prototype[key];
 
       // Check if the method has async metadata
-      const isAsync: boolean = Reflect.getMetadata(
+      const isAsync: boolean | undefined = Reflect.getMetadata(
         MetadataKeys.async,
         target.prototype,
         key
@@ -105,7 +139,7 @@ export function controller(routerPrefix: string) {
         key
       );
 
-      // get sync middleware list
+      // Sync Middleware chain
       const syncMiddlewareList: SyncRequestHandler[] =
         Reflect.getMetadata(
           MetadataKeys.syncMiddleware,
@@ -113,7 +147,7 @@ export function controller(routerPrefix: string) {
           key
         ) || [];
 
-      // get async middleware list
+      // Async Middleware chain
       const asyncMiddlewareList: AsyncRequestHandler[] | RequestHandler[] = (
         Reflect.getMetadata(
           MetadataKeys.asyncMiddleware,
@@ -124,6 +158,7 @@ export function controller(routerPrefix: string) {
         handleAsyncErrors(middleware as AsyncRequestHandler)
       );
 
+      // Body Validator Middleware
       const bodyValidatorRules: validatorRules[] =
         Reflect.getMetadata(
           MetadataKeys.bodyValidator,
@@ -134,11 +169,18 @@ export function controller(routerPrefix: string) {
         bodyValidatorRules
       );
 
+      // Authorize user middleware
+      const authorizedUserTypes =
+        Reflect.getMetadata(MetadataKeys.authorize, target.prototype, key) ||
+        [];
+      const authorizationMiddleware = authorizeUser(authorizedUserTypes);
+
       router
         .route(`${routerPrefix}${route}`)
         [method](
           ...syncMiddlewareList,
           ...asyncMiddlewareList,
+          authorizationMiddleware,
           bodyValidator,
           routeHandler
         );

@@ -29,10 +29,10 @@ async function loginRequired(
     jwt.verify
   )(authHeaderProperties[1], process.env.AUTH_SALT as string);
 
-  // Fetch the user from db
+  // Fetch the user from db (with the password)
   const currentUser: UserDocument | null = await User.findOne({
     _id: (verifiedJWTData as VerifiedJWTResult).userId,
-  });
+  }).select("+password");
 
   if (!currentUser)
     throw new AppError(

@@ -1,21 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { Document, Types } from "mongoose";
+import { Document, Model, Types } from "mongoose";
 import { NoSubstitutionTemplateLiteral } from "typescript";
 import { TypeStrings } from "./src/controllers/decorators/enums/typeStrings";
 
-enum DifficultyLevels {
-  easy = "easy",
-  medium = "medium",
-  hard = "hard",
-}
-
-enum UserTypes {
-  user = "user",
-  moderator = "moderator",
-  admin = "admin",
-}
-
 declare global {
+  type UserTypes = _UserTypes;
+
   interface MiddlewareHandler {
     req: Request;
     res: Response;
@@ -39,13 +29,20 @@ declare global {
     password: string;
     confirmPassword?: string;
     photo?: string;
-    userType: UserTypes;
+    userType: string;
   }
 
   interface UserDocument extends User, Document {
     verifyPassword: (candidatePassword: string) => Promise<boolean>;
     hasChangedPassword: (expAt: number) => boolean;
+    getPasswordResetToken: () => string;
     changedPasswordAt?: Date;
+    passwordResetToken?: string;
+    resetTokenExpiresAt?: number;
+  }
+
+  interface UserModel extends Model<UserDocument> {
+    generateHashedToken(token: string): string;
   }
 
   interface UserResult extends User {
@@ -57,7 +54,7 @@ declare global {
     slug: string;
     duration: number;
     maxGroupSize: number;
-    difficulty: DifficultyLevels;
+    difficulty: string;
     price: number;
     summery: string;
     imageCover: string;

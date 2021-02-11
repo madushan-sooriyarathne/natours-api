@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import AppError from "../utils/AppError";
-import { all, controller } from "./decorators";
+import { all, asyncHandler, controller } from "./decorators";
 
 /**
  * 404 error handling route
@@ -18,6 +18,7 @@ class ErrorController {
    * @param {Express.NextFunction} next - function that points to next middleware
    */
   @all("*")
+  @asyncHandler
   async handle404(req: Request, res: Response): Promise<void> {
     throw new AppError(
       `path ${req.url} does not accept ${req.method} requests`,

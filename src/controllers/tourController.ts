@@ -10,12 +10,14 @@ import {
   use,
   useAsync,
   validateBody,
+  authorizeUsers,
 } from "./decorators";
 import Tour from "../models/Tour";
 import { TypeStrings } from "./decorators/enums/typeStrings";
+import { UserTypes } from "./decorators/enums/userTypes";
 import APIOperations from "../utils/APIOperations";
 import AppError from "../utils/AppError";
-import { loginRequired } from "./middlewares/loginRequired";
+import { loginRequired } from "./middlewares";
 
 /**
  * A middleware function to validate tour id
@@ -147,6 +149,8 @@ class TourController {
    */
   @asyncHandler
   @get("/tour-stats")
+  @useAsync(loginRequired)
+  @authorizeUsers(UserTypes.admin, UserTypes.user)
   async getTourStats(req: Request, res: Response): Promise<void> {
     const stats = await Tour.aggregate([
       {

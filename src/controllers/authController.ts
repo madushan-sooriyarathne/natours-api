@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { userInfo } from "os";
 
 import User from "../models/User";
 import AppError from "../utils/AppError";
@@ -18,14 +17,34 @@ import {
 import { TypeStrings } from "./decorators/enums/typeStrings";
 import { loginRequired } from "./middlewares";
 
+// TODO - add refresh token mechanism with redis store to expire the refresh tokens
+
+/**
+ * @function getSignedAccessToken - Takes the unique id of the user and
+ * returns a signed jwt token with user id in the encrypted payload
+ * @param {string} userId - Mongoose unique id of the user
+ * @returns {string} - Signed JWT access token
+ */
 function getSignedAccessToken(userId: string): string {
   return jwt.sign({ userId }, process.env.AUTH_SALT as string, {
     expiresIn: "15m",
   });
 }
 
+/**
+ * @class Main controller for all auth route end points
+ */
 @controller("/api/v1/auth")
 class AuthController {
+  /**
+   * User registration route.
+   * username, name, email, password & confirmPassword fields
+   * must present in the request body
+   * @async
+   * @function
+   * @param {Express.Request} req - Express request object
+   * @param {Express.Response} res - Express response object
+   */
   @asyncHandler
   @post("/register")
   @validateBody(
@@ -45,6 +64,14 @@ class AuthController {
     res.status(201).json({ status: "success", data: user, token: accessToken });
   }
 
+  /**
+   * User login route.
+   * email & password fields must present in the request body
+   * @async
+   * @function
+   * @param {Express.Request} req - Express request object
+   * @param {Express.Response} res - Express response object
+   */
   @asyncHandler
   @post("/login")
   @validateBody(
@@ -66,6 +93,16 @@ class AuthController {
     res.status(202).json({ status: "success", token: accessToken });
   }
 
+  /**
+   * forgot-password route.
+   * email field must be present in the request body.
+   * send the password reset email to the given email only
+   * if a user exists with the given email
+   * @async
+   * @function
+   * @param {Express.Request} req - Express request object
+   * @param {Express.Response} res - Express response object
+   */
   @asyncHandler
   @post("/forgot-password")
   @validateBody({ name: "email", type: TypeStrings.String })
@@ -111,6 +148,17 @@ class AuthController {
     });
   }
 
+  /**
+   * Reset Password route.
+   * password & confirmPassword fields must be present in the request body.
+   * Also, Password reset token must be included in query string with 'reset' identifier
+   * If the reset token is valid and not expired, change the user's password with
+   * given password after db validation
+   * @async
+   * @function
+   * @param {Express.Request} req - Express request object
+   * @param {Express.Response} res - Express response object
+   */
   @asyncHandler
   @patch("/reset-password")
   @validateBody(
@@ -153,6 +201,15 @@ class AuthController {
     });
   }
 
+  /**
+   * Update Password route.
+   * User must be logged in to use this route / functionality.
+   * previous, password & confirmPassword fields must be present in the request body.
+   * @async
+   * @function
+   * @param {Express.Request} req - Express request object
+   * @param {Express.Response} res - Express response object
+   */
   @asyncHandler
   @post("/update-password")
   @useAsync(loginRequired)
@@ -202,6 +259,15 @@ class AuthController {
     });
   }
 
+  /**
+   * Delete User route.
+   * User must be logged in to use this route / functionality.
+   * password field must present in the request body.
+   * @async
+   * @function
+   * @param {Express.Request} req - Express request object
+   * @param {Express.Response} res - Express response object
+   */
   @asyncHandler
   @post("/delete-user")
   @useAsync(loginRequired)

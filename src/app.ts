@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 
 import { AppRouter } from "./Router";
 import globalErrorHandler from "./utils/ErrorHandlers";
+import RateLimiter from "./utils/RateLimiter";
 
 import "./controllers/userController";
 import "./controllers/tourController";
@@ -22,6 +23,13 @@ process.on("uncaughtException", function (err: Error): void {
 // config dotenv
 dotenv.config({ path: `${__dirname}/../config.env` });
 
+// config the rate limiter
+RateLimiter.config({
+  maxRequestsAmount: 100,
+  timeWindow: 60 * 60 * 1000,
+  errorMessage: "Maximum amount of requests reached. Try again shortly",
+});
+
 const app: Express = express();
 
 let db: string;
@@ -37,14 +45,13 @@ if (process.env.NODE_ENV === "production") {
   db = process.env.MONGO_LOCAL_CONNECTION_STRING as string;
 }
 
-console.log(db);
-
 // connect to the db via mongoose
 mongoose
   .connect(db, {
     useNewUrlParser: true,
     useCreateIndex: true,
     useFindAndModify: false,
+    useUnifiedTopology: true,
   })
   .then((): void => console.log("Successfully connected to the database"))
   .catch((err: Error) => {
@@ -54,6 +61,7 @@ mongoose
     process.exit(1);
   });
 
+app.use(RateLimiter.limit());
 app.use(express.json());
 app.use(AppRouter.getRouter());
 

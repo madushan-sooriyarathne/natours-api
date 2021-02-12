@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import AppError from "./AppError";
 
+// TODO -  Replace this Mechanism with Redis
+
 interface ConfigOptions {
   maxRequestsAmount: number;
   timeWindow: number;

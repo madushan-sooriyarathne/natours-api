@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User";
 import AppError from "../utils/AppError";
 import Mailer from "../utils/Mailer";
+import { isEmail } from "../utils/validators";
 
 import {
   controller,
@@ -56,10 +57,11 @@ class AuthController {
   )
   async registerUser(req: Request, res: Response): Promise<void> {
     const user = await User.create(req.body);
-    console.log(user);
 
     // create the JWT token
     const accessToken: string = getSignedAccessToken(user._id);
+
+    // TODO: Clear the user body before sending back to client
 
     res.status(201).json({ status: "success", data: user, token: accessToken });
   }
@@ -105,7 +107,11 @@ class AuthController {
    */
   @asyncHandler
   @post("/forgot-password")
-  @validateBody({ name: "email", type: TypeStrings.String })
+  @validateBody({
+    name: "email",
+    type: TypeStrings.String,
+    validators: [isEmail],
+  })
   async forgotPassword(req: Request, res: Response): Promise<void> {
     const user: UserDocument | null = await User.findOne({
       email: req.body.email,

@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User";
 import AppError from "../utils/AppError";
 import Mailer from "../utils/Mailer";
-import { isEmail } from "../utils/validators";
+import { isEmail } from "../utils/stringValidators";
 
 import {
   controller,

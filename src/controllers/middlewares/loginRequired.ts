@@ -17,7 +17,12 @@ async function loginRequired(
   const authHeaderProperties: string[] = req.headers.authorization.split(" ");
 
   // Token must be set with Bearer flag in Authorization headers
-  if (authHeaderProperties[0] !== "Bearer" || !authHeaderProperties[1])
+  // NOTE: if jwt was not provided with Bearer flag, It will render as 'null' (typeof string)
+  if (
+    authHeaderProperties[0] !== "Bearer" ||
+    !authHeaderProperties[1] ||
+    authHeaderProperties[1] === "null"
+  )
     throw new AppError(
       "Cannot find the access token in the request headers - authorization failed",
       401,

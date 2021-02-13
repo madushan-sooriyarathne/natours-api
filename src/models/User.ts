@@ -75,19 +75,13 @@ const userSchema: Schema<UserDocument> = new Schema({
 userSchema.methods.verifyPassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
-  console.log(`Given password: ${candidatePassword}`);
-  console.log(`Old password: ${this.password}`);
-
   return await bcyrpt.compare(candidatePassword, this.password);
 };
 
 userSchema.methods.hasChangedPassword = function (expAt: number): boolean {
   if (this.changedPasswordAt) {
-    console.log(this.changedPasswordAt.getTime() / 1000);
     return this.changedPasswordAt.getTime() / 1000 > expAt;
   }
-
-  console.log(` ${expAt}`);
   return false;
 };
 

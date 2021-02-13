@@ -1,14 +1,12 @@
 import "reflect-metadata";
 import { NextFunction, RequestHandler, Request, Response } from "express";
-import jwt from "jsonwebtoken";
-import { promisify } from "util";
 
 import { AppRouter } from "../../Router";
 import { MetadataKeys } from "./enums/metadataKeys";
 import { Methods } from "./enums/routeNames";
 import { UserTypes } from "./enums/userTypes";
 import AppError from "../../utils/AppError";
-import User from "../../models/User";
+import { TypeStrings } from "./enums/typeStrings";
 
 /**
  * Function that takes an array of validatorRules objects and
@@ -23,6 +21,7 @@ function validateRequestBody(keys: validatorRules[]): RequestHandler {
     }
 
     for (let key of keys) {
+      // Check if the body property exists
       if (!req.body[key.name]) {
         res.status(400).json({
           status: "failed",
@@ -31,6 +30,7 @@ function validateRequestBody(keys: validatorRules[]): RequestHandler {
         return;
       }
 
+      // Check the type
       if (typeof req.body[key.name] !== key.type) {
         res.status(400).json({
           status: "failed",
@@ -38,7 +38,22 @@ function validateRequestBody(keys: validatorRules[]): RequestHandler {
         });
         return;
       }
+
+      // String validations
+      if (key.type === TypeStrings.String) {
+        if (key.validators && key.validators.length > 0) {
+          for (let validatorFn of key.validators) {
+            const [validated, errorMessage] = validatorFn(req.body[key.name]);
+
+            if (!validated) {
+              res.status(406).json({ status: "failed", message: errorMessage });
+              return;
+            }
+          }
+        }
+      }
     }
+
     next();
   };
 }

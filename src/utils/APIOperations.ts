@@ -1,8 +1,6 @@
 import { Query, Document } from "mongoose";
 import { ParsedQs } from "qs";
 
-type RequestQuery = { [key: string]: string };
-
 class APIOperations<T, K extends Document<any>> {
   query: Query<T[], K>;
   requestQueryObject: ParsedQs;

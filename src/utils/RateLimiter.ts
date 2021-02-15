@@ -2,6 +2,7 @@ import { Request, Response, NextFunction, RequestHandler } from "express";
 import AppError from "./AppError";
 
 // TODO -  Replace this Mechanism with Redis
+// TODO - Optional: Add Response delay with each failed response to selected secured routes
 
 interface ConfigOptions {
   maxRequestsAmount: number;

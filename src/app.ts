@@ -1,10 +1,12 @@
 import express, { Express } from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import helmet from "helmet";
 
 import { AppRouter } from "./Router";
 import globalErrorHandler from "./utils/ErrorHandlers";
 import RateLimiter from "./utils/RateLimiter";
+import AntiParameterPolluter from "./utils/AntiParameterPolluter";
 
 import "./controllers/userController";
 import "./controllers/tourController";
@@ -61,8 +63,19 @@ mongoose
     process.exit(1);
   });
 
+// set up security headers using helmet
+app.use(helmet());
+
+// limit request rates per hour
 app.use(RateLimiter.limit());
-app.use(express.json());
+
+// clean query parameters.
+app.use(AntiParameterPolluter.preventPollution());
+
+// parse request body and set maximum size of body
+app.use(express.json({ limit: "10kb" }));
+
+// get the custom router which has all route handlers attached to it.
 app.use(AppRouter.getRouter());
 
 /**

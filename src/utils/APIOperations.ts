@@ -1,11 +1,11 @@
 import { Query, Document } from "mongoose";
 import { ParsedQs } from "qs";
 
-class APIOperations<T, K extends Document<any>> {
-  query: Query<T[], K>;
+class APIOperations<K extends Document<any>> {
+  query: Query<K[], K>;
   requestQueryObject: ParsedQs;
 
-  constructor(query: Query<T[], K>, requestQueryObject: ParsedQs) {
+  constructor(query: Query<K[], K>, requestQueryObject: ParsedQs) {
     this.query = query;
     this.requestQueryObject = requestQueryObject;
   }

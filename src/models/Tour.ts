@@ -7,7 +7,10 @@ import {
   Aggregate,
 } from "mongoose";
 
-const tourSchema: Schema<TourDocument> = new Schema<TourDocument>(
+const tourSchema: Schema<TourDocument, TourModel> = new Schema<
+  TourDocument,
+  TourModel
+>(
   {
     name: {
       type: String,
@@ -56,8 +59,8 @@ const tourSchema: Schema<TourDocument> = new Schema<TourDocument>(
     priceDiscount: {
       type: Number,
       validate: {
-        validator: function (val: number): boolean {
-          return val < (this as TourDocument).price;
+        validator: function (this: TourDocument, val: number): boolean {
+          return val < this.price;
         },
         message: "discount price ({VALUE}) must be less than the price",
       },
@@ -103,6 +106,55 @@ const tourSchema: Schema<TourDocument> = new Schema<TourDocument>(
         message: "image must be a jpg, png or webp",
       },
     },
+    guides: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    startLocation: {
+      type: {
+        type: String,
+        default: "Point",
+        enum: {
+          values: ["Point"],
+          message: "startLocation value type must be a Point",
+        },
+      },
+      coordinates: {
+        type: [Number],
+        required: true,
+      },
+      address: {
+        type: String,
+        required: true,
+      },
+      description: {
+        type: String,
+      },
+    },
+
+    locations: [
+      {
+        type: {
+          type: String,
+          default: "Point",
+          enum: {
+            values: ["Point"],
+            message: "Location value type must be a Point",
+          },
+        },
+        coordinates: {
+          type: [Number],
+        },
+        address: {
+          type: String,
+        },
+        description: {
+          type: String,
+        },
+      },
+    ],
+
     createdAt: {
       type: Date,
       default: new Date(),
@@ -168,7 +220,7 @@ tourSchema.post<TourDocument>(
  * and set startTime property in query object to calculate elapsed time
  * in Post query hook
  */
-tourSchema.pre<Query<TourResult, TourDocument>>(
+tourSchema.pre<Query<TourDocument[], TourDocument>>(
   /^find/,
   function (next: (err: CallbackError) => void): void {
     this.find({ secretTour: { $ne: true } }).select("-secretTour");
@@ -183,9 +235,9 @@ tourSchema.pre<Query<TourResult, TourDocument>>(
  * extract the startTime value added from Pre Query hook
  * and calculate the time elapsed for the query
  */
-tourSchema.post<Query<TourResult, TourDocument>>(
+tourSchema.post<Query<TourDocument[], TourDocument>>(
   /^find/,
-  function (res: TourResult, next: (err: CallbackError) => void): void {
+  function (res: TourDocument[], next: (err: CallbackError) => void): void {
     console.log(
       `query executed in ${
         Date.now() - (this as { [key: string]: any }).startTime
@@ -211,6 +263,6 @@ tourSchema.pre<Aggregate<any>>(
 );
 
 // Tour Model
-const Tour: Model<TourDocument> = model("Tour", tourSchema);
+const Tour: TourModel = model("Tour", tourSchema);
 
 export default Tour;

@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response, RequestHandler } from "express";
+import { Query } from "mongoose";
 import {
   asyncHandler,
   controller,
@@ -92,7 +93,7 @@ class TourController {
   @get("/")
   @useAsync(loginRequired)
   async getTours(req: Request, res: Response): Promise<void> {
-    const apiOperationQuery = new APIOperations<TourResult, TourDocument>(
+    const apiOperationQuery = new APIOperations<TourDocument>(
       Tour.find(),
       req.query
     );
@@ -103,6 +104,8 @@ class TourController {
       .sort()
       .limitFields()
       .paginate().query;
+
+    console.log(tours[0]);
 
     res
       .status(200)
@@ -121,12 +124,12 @@ class TourController {
   @get("/best-5-budget-tours")
   @use(getAliasMiddleware(2))
   async getBestBudgetTours(req: Request, res: Response): Promise<void> {
-    const apiOpQuery: APIOperations<
-      TourResult,
-      TourDocument
-    > = new APIOperations<TourResult, TourDocument>(Tour.find(), req.query);
+    const apiOpQuery: APIOperations<TourDocument> = new APIOperations<TourDocument>(
+      Tour.find(),
+      req.query
+    );
 
-    const bestBudgetTorus: TourResult[] = await apiOpQuery
+    const bestBudgetTorus: TourDocument[] = await apiOpQuery
       .filter()
       .sort()
       .limitFields()

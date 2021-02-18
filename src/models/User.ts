@@ -1,8 +1,11 @@
 import crypto from "crypto";
-import bcyrpt, { hash } from "bcrypt";
-import { Model, Schema, model } from "mongoose";
+import bcyrpt from "bcrypt";
+import { Schema, model } from "mongoose";
 
-const userSchema: Schema<UserDocument> = new Schema({
+const userSchema: Schema<UserDocument, UserModel> = new Schema<
+  UserDocument,
+  UserModel
+>({
   username: {
     type: String,
     required: [true, "a user must have a username"],
@@ -29,6 +32,12 @@ const userSchema: Schema<UserDocument> = new Schema({
     minlength: [8, "password must be at least 8 characters long"],
     select: false,
   },
+  tours: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Tour",
+    },
+  ],
 
   userType: {
     type: String,
@@ -44,8 +53,8 @@ const userSchema: Schema<UserDocument> = new Schema({
     required: [true, "password confirmation is required"],
     validate: {
       // This runs only on initial document creation (save and create only)
-      validator: function (val: string): boolean {
-        return val === (this as UserDocument).password;
+      validator: function (this: UserDocument, val: string): boolean {
+        return val === this.password;
       },
       message: "password and password confirmation doesn't match",
     },

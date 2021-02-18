@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Document, Model, Types } from "mongoose";
+import { Document, Model, Schema, Types } from "mongoose";
 import { NoSubstitutionTemplateLiteral } from "typescript";
 import { TypeStrings } from "./src/controllers/decorators/enums/typeStrings";
 
@@ -33,6 +33,7 @@ declare global {
     confirmPassword?: string;
     photo?: string;
     userType: string;
+    tours: [Schema.Types.ObjectId];
   }
 
   interface UserDocument extends User, Document {
@@ -42,14 +43,12 @@ declare global {
     changedPasswordAt?: Date;
     passwordResetToken?: string;
     resetTokenExpiresAt?: number;
+    tours: Types.Array<Schema.Types.ObjectId>;
   }
 
+  // For static methods
   interface UserModel extends Model<UserDocument> {
     generateHashedToken(token: string): string;
-  }
-
-  interface UserResult extends User {
-    // if there's any virtuals, add here
   }
 
   interface Tour {
@@ -69,15 +68,72 @@ declare global {
     ratingsAverage?: number;
     ratingsQuantity?: number;
     secretTour?: boolean;
+    guides?: [Schema.Types.ObjectId];
+    startLocation?: {
+      type: string;
+      coordinates: [number];
+      address?: string;
+      description?: string;
+    };
+    locations?: [
+      {
+        type: string;
+        coordinates: [number];
+        address?: string;
+        description?: string;
+      }
+    ];
   }
 
   interface TourDocument extends Tour, Document {
     images?: Types.Array<string>;
     startDate?: Types.Array<Date>;
+    guides: Types.Array<Schema.Types.ObjectId>;
+
+    // virtuals
+    durationWeeks?: number;
   }
 
-  interface TourResult extends Tour {
-    durationWeeks?: number;
+  interface TourModel extends Model<TourDocument> {
+    // static methods here
+  }
+
+  interface Review {
+    title: string;
+    body?: string;
+    rating: number;
+    userId: string;
+    tourId: string;
+    date: Date;
+  }
+
+  interface ReviewDocument extends Document, Review {
+    // virtuals, methods & mongoose special types here
+    userId: Types.ObjectId;
+    tourId: Types.ObjectId;
+  }
+
+  interface ReviewModel extends Model<ReviewDocument> {
+    // statics here
+  }
+
+  interface Booking {
+    adults: number;
+    children?: number;
+    startDate: Date;
+    endDate: Date;
+    userId: string;
+    tourId: string;
+    description?: string;
+  }
+
+  interface BookingDocument extends Booking, Document {
+    userId: Types.ObjectId;
+    tourId: Types.ObjectId;
+  }
+
+  interface BookingModel extends Model<BookingDocument> {
+    // statics here
   }
 
   interface AliasRouteOptions {

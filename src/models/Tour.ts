@@ -184,6 +184,13 @@ tourSchema.virtual("durationWeeks").get(function (this: TourDocument): number {
   return this.duration / 7;
 });
 
+// Virtual populate
+tourSchema.virtual("reviews", {
+  ref: "Review",
+  foreignField: "tourId",
+  localField: "_id",
+});
+
 /**
  * Pre save hook / middleware
  * This middleware runs before each document save
@@ -223,7 +230,7 @@ tourSchema.post<TourDocument>(
 tourSchema.pre<Query<TourDocument[], TourDocument>>(
   /^find/,
   function (next: (err: CallbackError) => void): void {
-    this.find({ secretTour: { $ne: true } }).select("-secretTour");
+    this.find({ secretTour: { $ne: true } });
     (this as { [key: string]: any }).startTime = Date.now();
     next(null);
   }

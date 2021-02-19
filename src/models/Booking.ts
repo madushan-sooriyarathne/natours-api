@@ -3,41 +3,47 @@ import { model, Schema } from "mongoose";
 const bookingSchema: Schema<BookingDocument, BookingModel> = new Schema<
   BookingDocument,
   BookingModel
->({
-  adults: {
-    type: Number,
-    required: true,
-  },
+>(
+  {
+    adults: {
+      type: Number,
+      required: true,
+    },
 
-  children: {
-    type: Number,
-  },
+    children: {
+      type: Number,
+    },
 
-  startDate: {
-    type: Date,
-    required: true,
-  },
-  endDate: {
-    type: Date,
-    required: true,
-  },
+    startDate: {
+      type: Date,
+      required: true,
+    },
+    endDate: {
+      type: Date,
+      required: true,
+    },
 
-  userId: {
-    type: Schema.Types.ObjectId,
-    required: true,
-    ref: "User",
-  },
+    userId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: "User",
+    },
 
-  tourId: {
-    type: Schema.Types.ObjectId,
-    required: true,
-    ref: "Tour",
+    tourId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: "Tour",
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
   },
-  description: {
-    type: String,
-    trim: true,
-  },
-});
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
 
 const Booking: BookingModel = model("Booking", bookingSchema);
 

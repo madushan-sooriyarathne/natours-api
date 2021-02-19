@@ -23,9 +23,10 @@ const reviewSchema: Schema<ReviewDocument, ReviewModel> = new Schema<
   },
   date: {
     type: Date,
+    default: new Date(),
     required: true,
   },
-  userID: {
+  userId: {
     type: Schema.Types.ObjectId,
     required: true,
     ref: "User",

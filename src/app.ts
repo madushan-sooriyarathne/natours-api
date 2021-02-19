@@ -11,6 +11,8 @@ import AntiParameterPolluter from "./utils/AntiParameterPolluter";
 import "./controllers/userController";
 import "./controllers/tourController";
 import "./controllers/authController";
+import "./controllers/reviewController";
+import "./controllers/tourReviewController";
 
 // Always import the errorController after all other controllers
 import "./controllers/errorController";

@@ -59,41 +59,6 @@ function validateRequestBody(keys: validatorRules[]): RequestHandler {
 }
 
 /**
- * Function that takes list of allowed user types and
- * check if current user is authorized before reaching the specified route
- * @param userTypes - List of allowed user types
- * @returns {RequestHandler} - Middleware function that checks and authorize user types
- */
-function authorizeUser(userTypes: UserTypes[]): RequestHandler {
-  return function (req: Request, res: Response, next: NextFunction): void {
-    if (userTypes.length < 1) {
-      // No user types are mentioned
-      // skip user authorization
-      next();
-      return;
-    }
-
-    const currentUser: UserDocument = (req as { [key: string]: any }).user;
-
-    if (!currentUser)
-      throw new AppError(
-        "You must be authenticated first to use this route",
-        403,
-        "failed"
-      );
-
-    if (!userTypes.includes(currentUser.userType as UserTypes))
-      throw new AppError(
-        "You are not authorized to use this route",
-        403,
-        "failed"
-      );
-
-    next();
-  };
-}
-
-/**
  * This function take a request handling handling function (async or non-async) as a argument and
  * handles any unhandled promise rejection errors
  * @param {AsyncRequestHandler | SyncRequestHandler | RequestHandler} fn - a route handling function which needed to be error handled
@@ -184,18 +149,11 @@ export function controller(routerPrefix: string) {
         bodyValidatorRules
       );
 
-      // Authorize user middleware
-      const authorizedUserTypes =
-        Reflect.getMetadata(MetadataKeys.authorize, target.prototype, key) ||
-        [];
-      const authorizationMiddleware = authorizeUser(authorizedUserTypes);
-
       router
         .route(`${routerPrefix}${route}`)
         [method](
           ...syncMiddlewareList,
           ...asyncMiddlewareList,
-          authorizationMiddleware,
           bodyValidator,
           routeHandler
         );

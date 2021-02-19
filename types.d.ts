@@ -4,20 +4,9 @@ import { NoSubstitutionTemplateLiteral } from "typescript";
 import { TypeStrings } from "./src/controllers/decorators/enums/typeStrings";
 
 declare global {
-  // type UserTypes = _UserTypes;
-
-  // interface MiddlewareHandler {
-  //   req: Request;
-  //   res: Response;
-  //   next: NextFunction;
-  // }
-
-  // interface RequestResponseHandler {
-  //   req: Request;
-  //   res: Response;
-  // }
-
   type ValidatorFunctionType = (str: string) => [boolean, string];
+
+  type CustomRequest = { [key: string]: any };
 
   interface validatorRules {
     name: string;
@@ -92,6 +81,7 @@ declare global {
 
     // virtuals
     durationWeeks?: number;
+    reviews?: ReviewDocument[];
   }
 
   interface TourModel extends Model<TourDocument> {

@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response, RequestHandler } from "express";
-import { Query } from "mongoose";
 import {
   asyncHandler,
   controller,
@@ -18,36 +17,7 @@ import { TypeStrings } from "./decorators/enums/typeStrings";
 import { UserTypes } from "./decorators/enums/userTypes";
 import APIOperations from "../utils/APIOperations";
 import AppError from "../utils/AppError";
-import { loginRequired } from "./middlewares";
-
-/**
- * A middleware function to validate tour id
- * it will query the tour for given id and go to next middleware if tour exists or
- * send a failed response if tour doesn't exists
- * @function validateId
- * @async
- * @param {Express.Request} req - Express Request Object
- * @param {Express.Response} res - Express Response object
- * @returns {Promise<void>} - A promise that resolves to void
- */
-async function validateId(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  if (!req.params.id)
-    throw new AppError("Invalid request. you must have a id parameter", 404);
-
-  const fetchedTour = await Tour.findById(req.params.id);
-
-  if (!fetchedTour)
-    throw new AppError(
-      `Invalid tour id. ${req.params.id} does not associate with any existing tours`,
-      404
-    );
-
-  next();
-}
+import { loginRequired, validateId } from "./middlewares";
 
 /**
  * Forcefully add limit and sort fields to Request.query object
@@ -91,7 +61,7 @@ class TourController {
    */
   @asyncHandler
   @get("/")
-  @useAsync(loginRequired)
+  @useAsync(loginRequired())
   async getTours(req: Request, res: Response): Promise<void> {
     const apiOperationQuery = new APIOperations<TourDocument>(
       Tour.find(),
@@ -110,6 +80,31 @@ class TourController {
     res
       .status(200)
       .json({ status: "success", count: tours.length, data: tours });
+  }
+
+  /**
+   * Get the one tour with given id
+   * @function getOneTour
+   * @async
+   * @param {Express.Request} req - Express Request Object
+   * @param {Express.Response} res - Express Response object
+   * @returns {Promise<void>} - A promise that resolves to void
+   */
+  @asyncHandler
+  @get("/:id")
+  @useAsync(validateId(Tour))
+  async getOneTour(req: Request, res: Response): Promise<void> {
+    const tour: TourDocument | null = await Tour.findOne({ _id: req.params.id })
+      .populate("reviews")
+      .select("-__v -secretTour");
+
+    // if tour does not exists in the db (this case is actually handled in validateId middleware)
+    // or if it's a secretTour send 404 to client
+    if (!tour)
+      throw new AppError(`Tour with id ${req.params.id} does not exists`, 404);
+
+    // send data to client with success message
+    res.status(200).json({ status: "success", data: tour });
   }
 
   /**
@@ -152,7 +147,7 @@ class TourController {
    */
   @asyncHandler
   @get("/tour-stats")
-  @useAsync(loginRequired)
+  @useAsync(loginRequired())
   @authorizeUsers(UserTypes.admin, UserTypes.user)
   async getTourStats(req: Request, res: Response): Promise<void> {
     const stats = await Tour.aggregate([
@@ -228,7 +223,7 @@ class TourController {
    */
   @asyncHandler
   @patch("/:id")
-  @useAsync(validateId)
+  @useAsync(validateId(Tour))
   async updateTour(req: Request, res: Response): Promise<void> {
     const updatedTour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -249,7 +244,7 @@ class TourController {
    */
   @asyncHandler
   @put("/:id")
-  @useAsync(validateId)
+  @useAsync(validateId(Tour))
   @validateBody(
     { name: "name", type: TypeStrings.String },
     { name: "difficulty", type: TypeStrings.String },
@@ -280,7 +275,8 @@ class TourController {
    */
   @asyncHandler
   @del("/:id")
-  @useAsync(validateId)
+  @useAsync(validateId(Tour))
+  @useAsync(loginRequired(UserTypes.admin))
   async deleteTour(
     req: Request,
     res: Response,

@@ -1,21 +1,13 @@
 import { Response, Request } from "express";
 import User from "../models/User";
-import {
-  authorizeUsers,
-  controller,
-  get,
-  patch,
-  use,
-  useAsync,
-} from "./decorators";
+import { controller, get, patch, use, useAsync } from "./decorators";
 import { UserTypes } from "./decorators/enums/userTypes";
 import { filterRequestBody, loginRequired } from "./middlewares";
 
 @controller("/api/v1/users")
 class UserController {
   @get("/")
-  @useAsync(loginRequired)
-  @authorizeUsers(UserTypes.admin)
+  @useAsync(loginRequired(UserTypes.admin))
   async getAllUsers(req: Request, res: Response): Promise<void> {
     try {
       const users = await User.find();
@@ -31,7 +23,7 @@ class UserController {
   }
 
   @patch("/update-user")
-  @useAsync(loginRequired)
+  @useAsync(loginRequired())
   @use(filterRequestBody("name", "username", "email"))
   async updateUser(req: Request, res: Response): Promise<void> {
     // get the current user from request object

@@ -218,7 +218,7 @@ class AuthController {
    */
   @asyncHandler
   @post("/update-password")
-  @useAsync(loginRequired)
+  @useAsync(loginRequired())
   @validateBody(
     {
       name: "previousPassword",
@@ -276,7 +276,7 @@ class AuthController {
    */
   @asyncHandler
   @post("/delete-user")
-  @useAsync(loginRequired)
+  @useAsync(loginRequired())
   @validateBody({ name: "password", type: TypeStrings.String })
   async deleteUser(req: Request, res: Response): Promise<void> {
     // get the logged in user from request object

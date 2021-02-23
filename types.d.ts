@@ -3,10 +3,25 @@ import { Document, Model, Schema, Types } from "mongoose";
 import { NoSubstitutionTemplateLiteral } from "typescript";
 import { TypeStrings } from "./src/controllers/decorators/enums/typeStrings";
 
+/**
+ * IMPORTANT NOTE
+ *
+ * Schema.Types.ObjectId is used when building Mongoose schemas
+ * For Type annotation, use Types.ObjectId
+ *
+ * https://github.com/DefinitelyTyped/DefinitelyTyped/issues/12385#issuecomment-262118503
+ */
+
 declare global {
   type ValidatorFunctionType = (str: string) => [boolean, string];
 
   type CustomRequest = { [key: string]: any };
+
+  type ReviewAggregationResult = {
+    _id: string;
+    ratingsCount: number;
+    ratingsAverage: number;
+  };
 
   interface validatorRules {
     name: string;
@@ -22,7 +37,7 @@ declare global {
     confirmPassword?: string;
     photo?: string;
     userType: string;
-    tours: [Schema.Types.ObjectId];
+    tours: string[];
   }
 
   interface UserDocument extends User, Document {
@@ -32,7 +47,7 @@ declare global {
     changedPasswordAt?: Date;
     passwordResetToken?: string;
     resetTokenExpiresAt?: number;
-    tours: Types.Array<Schema.Types.ObjectId>;
+    tours: Types.Array<Types.ObjectId>;
   }
 
   // For static methods
@@ -57,17 +72,17 @@ declare global {
     ratingsAverage?: number;
     ratingsQuantity?: number;
     secretTour?: boolean;
-    guides?: [Schema.Types.ObjectId];
+    guides?: string[];
     startLocation?: {
       type: string;
-      coordinates: [number];
+      coordinates: number[];
       address?: string;
       description?: string;
     };
     locations?: [
       {
         type: string;
-        coordinates: [number];
+        coordinates: number[];
         address?: string;
         description?: string;
       }
@@ -77,7 +92,7 @@ declare global {
   interface TourDocument extends Tour, Document {
     images?: Types.Array<string>;
     startDate?: Types.Array<Date>;
-    guides: Types.Array<Schema.Types.ObjectId>;
+    guides: Types.Array<Types.ObjectId>;
 
     // virtuals
     durationWeeks?: number;
@@ -105,6 +120,7 @@ declare global {
 
   interface ReviewModel extends Model<ReviewDocument> {
     // statics here
+    updateTourReviewStats: (tourId: ObjectId) => Promise<void>;
   }
 
   interface Booking {

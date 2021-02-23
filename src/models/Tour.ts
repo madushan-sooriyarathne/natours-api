@@ -45,6 +45,9 @@ const tourSchema: Schema<TourDocument, TourModel> = new Schema<
       default: 4.5,
       min: [1, "rating value must be equal or higher than 1.0"],
       max: [5, "rating value must be equal or lower than 5.0"],
+      set: function (val: number): number {
+        return Math.round(val * 10) / 10;
+      },
     },
     ratingsQuantity: {
       type: Number,
@@ -174,6 +177,11 @@ const tourSchema: Schema<TourDocument, TourModel> = new Schema<
   }
 );
 
+// indexes
+tourSchema.index({ price: 1, ratingsAverage: -1 });
+tourSchema.index({ slug: 1 });
+tourSchema.index({ startLocation: "2dsphere" });
+
 /**
  * Add a virtual value to the query document
  * in order to get virtual fields in the resolved query result
@@ -265,6 +273,14 @@ tourSchema.pre<Aggregate<any>>(
   "aggregate",
   function (next: (error: CallbackError) => void): void {
     this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+
+    this.pipeline().forEach((item, index) => {
+      if (Object.keys(item)[0] === "$geoNear") {
+        this.pipeline().unshift(this.pipeline()[index]);
+        this.pipeline().splice(index + 1, 1);
+      }
+    });
+
     next(null);
   }
 );

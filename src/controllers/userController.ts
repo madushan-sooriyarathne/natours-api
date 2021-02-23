@@ -1,11 +1,19 @@
 import { Response, Request } from "express";
 import User from "../models/User";
-import { controller, get, patch, use, useAsync } from "./decorators";
+import {
+  asyncHandler,
+  controller,
+  get,
+  patch,
+  use,
+  useAsync,
+} from "./decorators";
 import { UserTypes } from "./decorators/enums/userTypes";
 import { filterRequestBody, loginRequired } from "./middlewares";
 
 @controller("/api/v1/users")
 class UserController {
+  @asyncHandler
   @get("/")
   @useAsync(loginRequired(UserTypes.admin))
   async getAllUsers(req: Request, res: Response): Promise<void> {
@@ -22,6 +30,7 @@ class UserController {
     }
   }
 
+  @asyncHandler
   @patch("/update-user")
   @useAsync(loginRequired())
   @use(filterRequestBody("name", "username", "email"))
@@ -42,5 +51,16 @@ class UserController {
       message: "User updated successfully",
       data: updatedUser,
     });
+  }
+
+  @get("/account")
+  @useAsync(loginRequired(UserTypes.user))
+  function(req: Request, res: Response): void {
+    const currentUser: UserDocument = (req as CustomRequest).user;
+
+    // removing password field (can use "delete currentUser._doc.password")
+    currentUser.set("password", undefined);
+
+    res.status(200).json({ status: "success", data: currentUser });
   }
 }

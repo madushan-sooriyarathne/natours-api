@@ -61,7 +61,6 @@ class TourController {
    */
   @asyncHandler
   @get("/")
-  @useAsync(loginRequired())
   async getTours(req: Request, res: Response): Promise<void> {
     const apiOperationQuery = new APIOperations<TourDocument>(
       Tour.find(),
@@ -75,11 +74,76 @@ class TourController {
       .limitFields()
       .paginate().query;
 
-    console.log(tours[0]);
-
     res
       .status(200)
       .json({ status: "success", count: tours.length, data: tours });
+  }
+
+  @asyncHandler
+  @get("/tours-within/:distance/center/:latlng/unit/:unit")
+  async getToursWithin(req: Request, res: Response): Promise<void> {
+    // get the necessary parameters from the url
+    const { distance, latlng, unit } = req.params;
+
+    // get the lat and lng values
+    const [lat, lng] = latlng.split(",");
+
+    if (!lat || !lng)
+      throw new AppError(
+        "invalidate location data. please provide latitude and longitude in lat,lng format",
+        406
+      );
+
+    // calculate the mongoose radius value
+    const radians =
+      unit === "mi" ? parseInt(distance) / 3963.2 : parseInt(distance) / 6378.1;
+
+    // query the db
+    const tours: TourDocument[] = await Tour.find({
+      startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radians] } },
+    });
+
+    res.status(200).json({ status: "success", data: tours });
+  }
+
+  @asyncHandler
+  @get("/distances/:latlng/unit/:unit")
+  async getTourDistances(req: Request, res: Response): Promise<void> {
+    const { latlng, unit } = req.params;
+
+    // get the lat and lng values
+    const [lat, lng] = latlng.split(",");
+
+    if (!lat || !lng)
+      throw new AppError(
+        "invalidate location data. please provide latitude and longitude in lat,lng format",
+        406
+      );
+
+    // calculate distance
+    const multiplier: number = unit === "mi" ? 0.000621371 : 0.001;
+
+    // aggregation pipeline
+    const aggregatedData = await Tour.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [parseFloat(lng), parseFloat(lat)],
+          },
+          distanceField: "distance",
+          distanceMultiplier: multiplier,
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          distance: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json({ status: "success", data: aggregatedData });
   }
 
   /**
@@ -117,7 +181,7 @@ class TourController {
    */
   @asyncHandler
   @get("/best-5-budget-tours")
-  @use(getAliasMiddleware(2))
+  @use(getAliasMiddleware(5))
   async getBestBudgetTours(req: Request, res: Response): Promise<void> {
     const apiOpQuery: APIOperations<TourDocument> = new APIOperations<TourDocument>(
       Tour.find(),
@@ -204,6 +268,7 @@ class TourController {
     { name: "summery", type: TypeStrings.String },
     { name: "imageCover", type: TypeStrings.String }
   )
+  @useAsync(loginRequired(UserTypes.admin))
   async addTour(req: Request, res: Response): Promise<void> {
     const newTour = await Tour.create({
       ...req.body,
@@ -224,6 +289,7 @@ class TourController {
   @asyncHandler
   @patch("/:id")
   @useAsync(validateId(Tour))
+  @useAsync(loginRequired(UserTypes.admin))
   async updateTour(req: Request, res: Response): Promise<void> {
     const updatedTour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -254,6 +320,7 @@ class TourController {
     { name: "summery", type: TypeStrings.String },
     { name: "imageCover", type: TypeStrings.String }
   )
+  @useAsync(loginRequired(UserTypes.admin))
   async changeTour(req: Request, res: Response): Promise<void> {
     const changedTour = await Tour.findByIdAndUpdate(
       req.params.id,
